@@ -26,6 +26,7 @@ https://github.com/user-attachments/assets/7705c32f-cca7-49a5-9b1a-6d081fa3a5eb
 
 # Créditos
 
+- **Tipografía**: [Ubuntu - Google Fonts](https://fonts.google.com/specimen/Ubuntu).
 - **Sprite del camión**: [White box truck on transparent background mockup for delivery and logistics | Free PSD](https://www.magnific.com/free-psd/white-box-truck-transparent-background-mockup-delivery-logistics_409092819.htm#fromView=keyword&page=1&position=3&uuid=b3c09c44-85e8-4acf-9f73-b6e343f2bc93&track=ais_hybrid&query=Truck+sprite) en Magnific.
 - **Sprite de las cajas**: [Box | OpenGameArt.org](https://opengameart.org/content/box-2) en OpenGameArt.
 
