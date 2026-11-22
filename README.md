@@ -16,13 +16,13 @@ La aplicación permite parametrizar tanto el número de **cajas** (entre 2 y 5) 
 
 Permite al usuario resolver el traslado de forma manual arrastrando y soltando las cajas con el ratón.
 
-[VIDEO]
+https://github.com/user-attachments/assets/097e7bdb-b853-41f4-82b9-695abcf1d73b
 
 ### 2. Modo Automático: Botón `Empezar y ver solución de la simulación`:
 
 Calcula y reproduce de manera automática la resolución óptima paso a paso.
 
-[VIDEO]
+https://github.com/user-attachments/assets/7705c32f-cca7-49a5-9b1a-6d081fa3a5eb
 
 # Créditos
 
