@@ -1,6 +1,6 @@
 # 📦 simulacion-de-descarga
 
-Simulación interactiva desarrollada en C++ y [raylib](https://www.raylib.com/) que modela el proceso de descarga y traslado de mercancía entre muelles portuarios como una generalización del problema de las Torres de Hanói con múltiples postes, utilizando el algoritmo de **Frame-Stewart** para el cálculo óptimo de movimientos.
+Simulación interactiva desarrollada en C++, [raylib](https://www.raylib.com/) y [raygui](https://github.com/raysan5/raygui) que modela el proceso de descarga y traslado de mercancía entre muelles portuarios como una generalización del problema de las Torres de Hanói con múltiples postes, utilizando el algoritmo de **Frame-Stewart** para el cálculo óptimo de movimientos.
 
 # Compilación y Ejecución
 
