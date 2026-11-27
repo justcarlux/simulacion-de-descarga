@@ -30,7 +30,7 @@ void GameStatusBar::draw(GameSimulation& simulation) {
 	float textY = top + (GameLayout::STATUS_BAR_HEIGHT - STATUS_TEXT_SIZE) / 2.0f;
 	DrawTextEx(font, this->getMainText(simulation), { 10, textY + 1 }, STATUS_TEXT_SIZE, 0, WHITE);
 
-	const char* speedText = TextFormat("Velocidad de reproducción de soluciones: %.1fx", simulation.solutionPlaybackSpeed);
+	const char* speedText = TextFormat("Velocidad de soluciones: %.1fx", simulation.solutionPlaybackSpeed);
 	Vector2 speedSize = MeasureTextEx(font, speedText, STATUS_TEXT_SIZE, 0);
 
 	float controlY = (top + (GameLayout::STATUS_BAR_HEIGHT - BUTTON_SIZE) / 2.0f); 
