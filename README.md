@@ -24,13 +24,13 @@ La aplicación permite parametrizar el número de **cajas grandes** (entre 1 y 4
 
 Permite al usuario resolver el traslado de forma manual arrastrando y soltando las cajas con el ratón.
 
-https://github.com/user-attachments/assets/097e7bdb-b853-41f4-82b9-695abcf1d73b
+https://github.com/user-attachments/assets/050944d9-99e7-464f-8194-f9fe02300b3d
 
 ### 2. Modo Automático: Botón `Empezar simulación`:
 
 Calcula y reproduce de manera automática la resolución óptima paso a paso.
 
-https://github.com/user-attachments/assets/7705c32f-cca7-49a5-9b1a-6d081fa3a5eb
+https://github.com/user-attachments/assets/7c44b567-3d09-48f7-ba51-fbfd1310f0ba
 
 # Créditos
 
