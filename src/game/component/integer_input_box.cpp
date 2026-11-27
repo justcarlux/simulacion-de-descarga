@@ -90,6 +90,10 @@ void IntegerInputBox::draw() {
                 DrawTextEx(font, TextFormat("El valor es muy grande. No puede ser mayor a %d", range.second), { this->bounds.x + this->bounds.width + 10, this->bounds.y + 4 }, this->textSize, 0, RED);
             }
         }
+        if (this->currentValueValid && this->mustBeEven && value % 2 != 0) {
+            this->currentValueValid = false;
+            DrawTextEx(font, "El valor debe ser un número par.", { this->bounds.x + this->bounds.width + 10, this->bounds.y + 4 }, this->textSize, 0, RED);
+        }
         if (this->currentValueValid) {
             this->value = value;
         }

@@ -20,7 +20,7 @@ namespace GameGuiStyles {
 
 namespace GameLayout {
 	constexpr const int STATUS_BAR_HEIGHT = 32;
-	constexpr const int SIMULATION_TOP = 192;
+	constexpr const int SIMULATION_TOP = 222;
 }
 
 namespace GameColors {

@@ -22,6 +22,7 @@ private:
 public:
 	int value;
 	bool currentValueValid;
+	bool mustBeEven = false;
 	IntegerInputBox(Rectangle bounds, int textSize, int value);
 	IntegerInputBox(Rectangle bounds, int textSize, int value, int min, int max);
 	void draw();

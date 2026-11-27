@@ -10,7 +10,8 @@ private:
 	std::optional<Font> controlsFont;
 	Font getControlsFont();
 public:
-	IntegerInputBox boxesInputBox;
+	IntegerInputBox bigBoxesInputBox;
+	IntegerInputBox smallBoxesInputBox;
 	IntegerInputBox auxiliarDocksInputBox;
 	GameControls();
 	void draw(GameSimulation* simulation);

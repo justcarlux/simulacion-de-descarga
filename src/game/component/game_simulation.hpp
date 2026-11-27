@@ -3,7 +3,8 @@
 #include <raylib.h>
 #include <optional>
 #include <deque>
-#include "../../frame_stewart_solver.h"
+#include <vector>
+#include "../../unload_solver.h"
 
 class GameSimulation;
 
@@ -12,10 +13,13 @@ private:
 	GameSimulation& simulation;
 	float alpha;
 	float offsetY;
+	void drawSprites(Rectangle bounds, Color tint);
 public:
-	SimulationBox(GameSimulation& simulation, int value);
-	int value;
-	float getSize();
+	SimulationBox(GameSimulation& simulation, BoxType type);
+	BoxType type;
+	float getWidth();
+	float getHeight();
+	Rectangle getRect(float centerX, float bottom);
 	void setAppearProgress(float progress);
 	void draw(float centerX, float bottom, bool movable);
 	void drawGhost(float centerX, float bottom, float opacity);
@@ -26,13 +30,13 @@ private:
 	GameSimulation& simulation;
 public:
 	std::vector<SimulationBox> boxes;
-	FrameStewartSolver::DockType type;
+	UnloadSolver::DockType type;
 	int index;
-	SimulationDock(GameSimulation& simulation, FrameStewartSolver::DockType type, int auxiliarIndex = 0);
+	SimulationDock(GameSimulation& simulation, UnloadSolver::DockType type, int auxiliarIndex = 0);
 	Vector2 getPosition();
 	Rectangle getRect();
 	Vector2 getStackAnchor(size_t count);
-	Rectangle getPlacementRect(float boxSize);
+	Rectangle getPlacementRect(SimulationBox& box);
 	Rectangle getTopBoxRect();
 	bool canAccept(SimulationBox& box);
 	void draw();
@@ -42,15 +46,14 @@ public:
 class SolutionMovement {
 private:
 	GameSimulation& simulation;
-	SimulationDock& sourceDock;
 public:
-	int boxIndex;
+	SimulationDock& sourceDock;
 	float progress;
 	bool completed;
 	SimulationDock& destinationDock;
 	SolutionMovement(
 		GameSimulation& simulation,
-		FrameStewartSolver::Movement movement
+		UnloadSolver::Movement movement
 	);
 	void update(float dt);
 };
@@ -58,7 +61,7 @@ public:
 class GameSimulation
 {
 private:
-	FrameStewartSolver solver;
+	UnloadSolver solver;
 	std::optional<Texture2D> dockTexture;
 	std::optional<Texture2D> boxTexture;
 	std::optional<Texture2D> truckTexture;
@@ -76,7 +79,8 @@ private:
 	void drawDrag();
 	void drawTruck();
 public:
-	int boxes;
+	int bigBoxes;
+	int smallGroups;
 	int auxiliarDocks;
 	bool simulatedAtLeastOnce;
 	bool playingBeginAnimation;
@@ -86,7 +90,7 @@ public:
 	SimulationDock originDock;
 	SimulationDock destinationDock;
 	std::vector<SimulationDock> auxiliarDockList;
-	std::deque<FrameStewartSolver::Movement> solution;
+	std::deque<UnloadSolver::Movement> solution;
 	GameSimulation();
 	std::vector<SimulationDock*> getDocks();
 	bool isDragging();
@@ -96,9 +100,10 @@ public:
 	Texture2D getBoxTexture();
 	Texture2D getTruckTexture();
 	Font getLabelFont();
-	float getBoxInitialSize();
-	void begin(int boxes, int auxiliarDocks);
-	void beginAndSolve(int boxes, int auxiliarDocks);
+	int getTotalBoxes();
+	float getBoxScale();
+	void begin(int bigBoxes, int smallGroups, int auxiliarDocks);
+	void beginAndSolve(int bigBoxes, int smallGroups, int auxiliarDocks);
 	void draw();
 	void update(float dt);
 	void consumeNextSolutionMovement();

@@ -10,7 +10,7 @@ Game::Game() {
     GuiLoadStyleFromMemory(GameGuiStyles::DARK->data, GameGuiStyles::DARK->size);
 
     SetConfigFlags(FLAG_VSYNC_HINT);
-    InitWindow(1000, 782, "Juego de simulación de descarga");
+    InitWindow(1000, 812, "Juego de simulación de descarga");
 }
 
 void Game::draw() {

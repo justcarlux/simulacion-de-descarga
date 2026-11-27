@@ -53,29 +53,33 @@ const char* GameStatusBar::getMainText(GameSimulation& simulation) {
 	}
 	else if (simulation.playingBeginAnimation) {
 		return TextFormat(
-			"Estado: Cargando muelle origen... | Cajas: %d | Muelles auxiliares: %d",
-			simulation.boxes,
+			"Estado: Cargando muelle origen... | Grandes: %d | Pequeñas: %d | Auxiliares: %d",
+			simulation.bigBoxes,
+			simulation.smallGroups * 2,
 			simulation.auxiliarDocks
 		);
 	}
 	else if (simulation.playingSolution) {
 		return TextFormat(
-			"Estado: Reproduciendo solución... | Cajas: %d | Muelles auxiliares: %d",
-			simulation.boxes,
+			"Estado: Reproduciendo solución... | Grandes: %d | Pequeñas: %d | Auxiliares: %d",
+			simulation.bigBoxes,
+			simulation.smallGroups * 2,
 			simulation.auxiliarDocks
 		);
 	}
 	else if (simulation.areAllBoxesInDestination()) {
 		return TextFormat(
-			"Estado: ¡Simulación completada! Puedes iniciar otra. | Cajas: %d | Muelles auxiliares: %d",
-			simulation.boxes,
+			"Estado: ¡Simulación completada! Puedes iniciar otra. | Grandes: %d | Pequeñas: %d | Auxiliares: %d",
+			simulation.bigBoxes,
+			simulation.smallGroups * 2,
 			simulation.auxiliarDocks
 		);
 	}
 	else {
 		return TextFormat(
-			"Estado: Jugando. Puedes mover las cajas con el ratón. | Cajas: %d | Muelles auxiliares: %d",
-			simulation.boxes,
+			"Estado: Jugando. Puedes mover las cajas con el ratón. | Grandes: %d | Pequeñas: %d | Auxiliares: %d",
+			simulation.bigBoxes,
+			simulation.smallGroups * 2,
 			simulation.auxiliarDocks
 		);
 	}

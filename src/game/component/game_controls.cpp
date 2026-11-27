@@ -6,8 +6,11 @@ constexpr const int STROKE_WIDTH = 2;
 constexpr const int CONTROLS_TEXT_SIZE = 18;
 
 GameControls::GameControls() :
-	boxesInputBox({ 290, 85, 130, 25 }, CONTROLS_TEXT_SIZE, 2, 2, 5),
-	auxiliarDocksInputBox({ 290, 115, 130, 25 }, CONTROLS_TEXT_SIZE, 1, 1, 4) {}
+	bigBoxesInputBox({ 290, 85, 130, 25 }, CONTROLS_TEXT_SIZE, 2, 1, 4),
+	smallBoxesInputBox({ 290, 115, 130, 25 }, CONTROLS_TEXT_SIZE, 4, 2, 8),
+	auxiliarDocksInputBox({ 290, 145, 130, 25 }, CONTROLS_TEXT_SIZE, 1, 1, 4) {
+	this->smallBoxesInputBox.mustBeEven = true;
+}
 
 Font GameControls::getControlsFont() {
 	if (!this->controlsFont.has_value()) {
@@ -22,13 +25,17 @@ void GameControls::draw(GameSimulation* simulation) {
 
 	DrawRectangle(0, 75, renderWidth, STROKE_WIDTH, WHITE);
 
-	DrawTextEx(controlsFont, "Ingrese la cantidad de cajas: ", { 10, 85 + 3 }, CONTROLS_TEXT_SIZE, 0, WHITE);
-	this->boxesInputBox.draw();
+	DrawTextEx(controlsFont, "Ingrese la cantidad de cajas grandes: ", { 10, 85 + 3 }, CONTROLS_TEXT_SIZE, 0, WHITE);
+	this->bigBoxesInputBox.draw();
 
-	DrawTextEx(controlsFont, "Ingrese la cantidad de muelles auxiliares: ", { 10, 115 + 3 }, CONTROLS_TEXT_SIZE, 0, WHITE);
+	DrawTextEx(controlsFont, "Ingrese la cantidad de cajas pequeñas: ", { 10, 115 + 3 }, CONTROLS_TEXT_SIZE, 0, WHITE);
+	this->smallBoxesInputBox.draw();
+
+	DrawTextEx(controlsFont, "Ingrese la cantidad de muelles auxiliares: ", { 10, 145 + 3 }, CONTROLS_TEXT_SIZE, 0, WHITE);
 	this->auxiliarDocksInputBox.draw();
 
-	bool canSimulate = this->boxesInputBox.currentValueValid &&
+	bool canSimulate = this->bigBoxesInputBox.currentValueValid &&
+		this->smallBoxesInputBox.currentValueValid &&
 		this->auxiliarDocksInputBox.currentValueValid &&
 		!simulation->playingBeginAnimation;
 
@@ -36,20 +43,21 @@ void GameControls::draw(GameSimulation* simulation) {
 
 	GuiSetFont(controlsFont);
 	GuiSetStyle(DEFAULT, TEXT_SIZE, CONTROLS_TEXT_SIZE);
-	if (GuiButton({ 10, 150, 170, 30 }, "Empezar simulación")) {
-		simulation->begin(this->boxesInputBox.value, this->auxiliarDocksInputBox.value);
+	if (GuiButton({ 10, 180, 170, 30 }, "Empezar juego")) {
+		simulation->begin(this->bigBoxesInputBox.value, this->smallBoxesInputBox.value / 2, this->auxiliarDocksInputBox.value);
 	}
-	if (GuiButton({ 190, 150, 300, 30 }, "Empezar y ver solución de la simulación")) {
-		simulation->beginAndSolve(this->boxesInputBox.value, this->auxiliarDocksInputBox.value);
+	if (GuiButton({ 190, 180, 170, 30 }, "Empezar simulación")) {
+		simulation->beginAndSolve(this->bigBoxesInputBox.value, this->smallBoxesInputBox.value / 2, this->auxiliarDocksInputBox.value);
 	}
 
 	if (!canSimulate) GuiEnable();
 
-	DrawRectangle(0, 190, renderWidth, STROKE_WIDTH, WHITE);
+	DrawRectangle(0, 220, renderWidth, STROKE_WIDTH, WHITE);
 }
 
 void GameControls::unload() {
-	this->boxesInputBox.unload();
+	this->bigBoxesInputBox.unload();
+	this->smallBoxesInputBox.unload();
 	this->auxiliarDocksInputBox.unload();
 	if (this->controlsFont.has_value()) {
 		UnloadFont(*this->controlsFont);

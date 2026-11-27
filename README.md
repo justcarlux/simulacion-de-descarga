@@ -1,6 +1,6 @@
 # 📦 simulacion-de-descarga
 
-Simulación interactiva desarrollada en C++, [raylib](https://www.raylib.com/) y [raygui](https://github.com/raysan5/raygui) que modela el proceso de descarga y traslado de mercancía entre muelles portuarios como una generalización del problema de las Torres de Hanói con múltiples postes, utilizando el algoritmo de **Frame-Stewart** para el cálculo óptimo de movimientos. Desarrollado para la materia de **Taller de Estructuras de Datos** en la **Universidad de Oriente**.
+Simulación interactiva desarrollada en C++, [raylib](https://www.raylib.com/) y [raygui](https://github.com/raysan5/raygui) que modela el proceso de descarga y traslado de mercancía entre muelles portuarios como una variante del problema de las Torres de Hanói con dos tipos de cajas, utilizando un **algoritmo recursivo** para el cálculo óptimo de movimientos. Desarrollado para la materia de **Taller de Estructuras de Datos** en la **Universidad de Oriente**.
 
 # Compilación y Ejecución
 
@@ -10,15 +10,23 @@ Este proyecto está construido a partir de la plantilla multiplataforma **raylib
 
 # Modos de la Aplicación
 
-La aplicación permite parametrizar tanto el número de **cajas** (entre 2 y 5) como la cantidad de **muelles auxiliares** (entre 1 y 4), además de los muelles de **origen** y **destino**.
+La aplicación permite parametrizar el número de **cajas grandes** (entre 1 y 4), el número de **cajas pequeñas** (un número par entre 2 y 8) y la cantidad de **muelles auxiliares** (entre 1 y 4), además de los muelles de **origen** y **destino**.
 
-### 1. Modo Manual: Botón `Empezar simulación`:
+# Reglas
+
+- Existen dos tipos de cajas: **grandes** y **pequeñas**. Las cajas pequeñas siempre se agrupan de dos en dos.
+- En cada movimiento se traslada **una caja grande** o **un grupo de dos cajas pequeñas**.
+- Un grupo de cajas pequeñas puede colocarse encima de una caja grande o de otro grupo de cajas pequeñas.
+- Una caja grande puede colocarse encima de otra caja grande, pero **nunca** encima de un grupo de cajas pequeñas.
+- El objetivo es trasladar todas las cajas del muelle origen al muelle destino.
+
+### 1. Modo Manual: Botón `Empezar juego`:
 
 Permite al usuario resolver el traslado de forma manual arrastrando y soltando las cajas con el ratón.
 
 https://github.com/user-attachments/assets/097e7bdb-b853-41f4-82b9-695abcf1d73b
 
-### 2. Modo Automático: Botón `Empezar y ver solución de la simulación`:
+### 2. Modo Automático: Botón `Empezar simulación`:
 
 Calcula y reproduce de manera automática la resolución óptima paso a paso.
 

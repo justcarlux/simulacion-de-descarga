@@ -1,14 +1,17 @@
 #include "game_simulation.hpp"
 #include <algorithm>
 #include "../game_globals.hpp"
-#include "../../frame_stewart_solver.h"
+#include "../../unload_solver.h"
 #include "raymath.h"
 
 constexpr const int DOCK_MARGIN = 30;
 constexpr const int DOCK_SEPARATION_MARGIN = 30;
 constexpr const int LABEL_TEXT_SIZE = 18;
 constexpr const int LABEL_MARGIN = 4;
-constexpr const float BOX_SIZE_STEP = 9.0f;
+constexpr const float BIG_BOX_SIZE = 60.0f;
+constexpr const float SMALL_BOX_SIZE = 28.0f;
+constexpr const float SMALL_GROUP_GAP = 4.0f;
+constexpr const float MAX_STACK_HEIGHT = 150.0f;
 constexpr const int DOCK_FLOOR_OFFSET = 38;
 constexpr const float TRUCK_DOCK_GAP = 20.0f;
 constexpr const float TRUCK_TRAVEL_DISTANCE = 260.0f;
@@ -29,31 +32,47 @@ static float easeOutCubic(float t) {
 	return 1.0f - (1.0f - t) * (1.0f - t) * (1.0f - t);
 }
 
-static SimulationDock& lookupDockByBoxIndex(GameSimulation& simulation, int boxIndex) {
-	for (SimulationDock* dock : simulation.getDocks()) {
-		if (!dock->boxes.empty() && dock->boxes.back().value == boxIndex) {
-			return *dock;
-		}
-	}
-}
-
-static SimulationDock& lookupDock(GameSimulation& simulation, FrameStewartSolver::Destination destination) {
+static SimulationDock& lookupDock(GameSimulation& simulation, UnloadSolver::Destination destination) {
 	switch (destination.type) {
-	case FrameStewartSolver::DockType::Origin:
+	case UnloadSolver::DockType::Origin:
 		return simulation.originDock;
-	case FrameStewartSolver::DockType::Destination:
+	case UnloadSolver::DockType::Destination:
 		return simulation.destinationDock;
-	case FrameStewartSolver::DockType::Auxiliary:
+	case UnloadSolver::DockType::Auxiliary:
 		return simulation.auxiliarDockList[destination.auxiliarIndex];
 	}	
 }
 
-SimulationBox::SimulationBox(GameSimulation& simulation, int value) :
-	simulation(simulation), value(value), alpha(0.0f), offsetY(-BOX_DROP_DISTANCE) {
+SimulationBox::SimulationBox(GameSimulation& simulation, BoxType type) :
+	simulation(simulation), type(type), alpha(0.0f), offsetY(-BOX_DROP_DISTANCE) {
 }
 
-float SimulationBox::getSize() {
-	return this->simulation.getBoxInitialSize() + this->value * BOX_SIZE_STEP;
+float SimulationBox::getWidth() {
+	float baseWidth = this->type == BoxType::Big ? BIG_BOX_SIZE : SMALL_BOX_SIZE * 2.0f + SMALL_GROUP_GAP;
+	return baseWidth * this->simulation.getBoxScale();
+}
+
+float SimulationBox::getHeight() {
+	float baseHeight = this->type == BoxType::Big ? BIG_BOX_SIZE : SMALL_BOX_SIZE;
+	return baseHeight * this->simulation.getBoxScale();
+}
+
+Rectangle SimulationBox::getRect(float centerX, float bottom) {
+	float width = this->getWidth();
+	float height = this->getHeight();
+	return { centerX - width / 2.0f, bottom - height, width, height };
+}
+
+void SimulationBox::drawSprites(Rectangle bounds, Color tint) {
+	Texture2D texture = this->simulation.getBoxTexture();
+	Rectangle source = { 0, 0, (float)texture.width, (float)texture.height };
+	if (this->type == BoxType::Big) {
+		DrawTexturePro(texture, source, bounds, { 0, 0 }, 0, tint);
+		return;
+	}
+	float size = bounds.height;
+	DrawTexturePro(texture, source, { bounds.x, bounds.y, size, size }, { 0, 0 }, 0, tint);
+	DrawTexturePro(texture, source, { bounds.x + bounds.width - size, bounds.y, size, size }, { 0, 0 }, 0, tint);
 }
 
 void SimulationBox::setAppearProgress(float progress) {
@@ -62,26 +81,23 @@ void SimulationBox::setAppearProgress(float progress) {
 }
 
 void SimulationBox::draw(float centerX, float bottom, bool movable) {
-	Texture2D texture = this->simulation.getBoxTexture();
-	float size = this->getSize();
-	Rectangle source = { 0, 0, (float)texture.width, (float)texture.height };
-	Rectangle destination = { centerX - size / 2.0f, bottom - size + this->offsetY, size, size };
+	Rectangle destination = this->getRect(centerX, bottom + this->offsetY);
 	if (
 		this->simulation.playingSolution &&
 		this->simulation.currentSolutionMovement.has_value()
 	) {
 		SolutionMovement movement = (*this->simulation.currentSolutionMovement);
-		if (movement.boxIndex == this->value && !movement.completed) {
-			Rectangle desiredDestination = movement.destinationDock.getPlacementRect(size);
+		if (!movement.completed && !movement.sourceDock.boxes.empty() && &movement.sourceDock.boxes.back() == this) {
+			Rectangle desiredDestination = movement.destinationDock.getPlacementRect(*this);
 			Vector2 currentDestination = Vector2Lerp(
 				{ destination.x, destination.y },
 				{ desiredDestination.x, desiredDestination.y },
 				easeOutCubic(movement.progress)
 			);
-			destination = { currentDestination.x, currentDestination.y, size, size };
+			destination = { currentDestination.x, currentDestination.y, destination.width, destination.height };
 		}
 	}
-	DrawTexturePro(texture, source, destination, { 0, 0 }, 0, Fade(WHITE, this->alpha));
+	this->drawSprites(destination, Fade(WHITE, this->alpha));
 
 	if (
 		!movable ||
@@ -98,14 +114,10 @@ void SimulationBox::draw(float centerX, float bottom, bool movable) {
 }
 
 void SimulationBox::drawGhost(float centerX, float bottom, float opacity) {
-	Texture2D texture = this->simulation.getBoxTexture();
-	float size = this->getSize();
-	Rectangle source = { 0, 0, (float)texture.width, (float)texture.height };
-	Rectangle destination = { centerX - size / 2.0f, bottom - size, size, size };
-	DrawTexturePro(texture, source, destination, { 0, 0 }, 0, Fade(WHITE, opacity));
+	this->drawSprites(this->getRect(centerX, bottom), Fade(WHITE, opacity));
 }
 
-SimulationDock::SimulationDock(GameSimulation& simulation, FrameStewartSolver::DockType type, int index) :
+SimulationDock::SimulationDock(GameSimulation& simulation, UnloadSolver::DockType type, int index) :
 	simulation(simulation), type(type), index(index) {
 }
 
@@ -123,7 +135,7 @@ void SimulationDock::drawBoxes() {
 		if (!this->simulation.isBeingDragged(box)) {
 			box.draw(centerX, bottom, i == this->boxes.size() - 1);
 		}
-		bottom -= box.getSize();
+		bottom -= box.getHeight();
 	}
 }
 
@@ -140,24 +152,23 @@ Vector2 SimulationDock::getStackAnchor(size_t count) {
 	float centerX = position.x + dockTexture.width / 2.0f;
 	float bottom = position.y + dockTexture.height - DOCK_FLOOR_OFFSET;
 	for (size_t i = 0; i < count && i < this->boxes.size(); ++i) {
-		bottom -= this->boxes[i].getSize();
+		bottom -= this->boxes[i].getHeight();
 	}
 	return { centerX, bottom };
 }
 
-Rectangle SimulationDock::getPlacementRect(float boxSize) {
+Rectangle SimulationDock::getPlacementRect(SimulationBox& box) {
 	Vector2 anchor = this->getStackAnchor(this->boxes.size());
-	return { anchor.x - boxSize / 2.0f, anchor.y - boxSize, boxSize, boxSize };
+	return box.getRect(anchor.x, anchor.y);
 }
 
 Rectangle SimulationDock::getTopBoxRect() {
 	Vector2 anchor = this->getStackAnchor(this->boxes.size() - 1);
-	float size = this->boxes.back().getSize();
-	return { anchor.x - size / 2.0f, anchor.y - size, size, size };
+	return this->boxes.back().getRect(anchor.x, anchor.y);
 }
 
 bool SimulationDock::canAccept(SimulationBox& box) {
-	return this->boxes.empty() || box.value < this->boxes.back().value;
+	return this->boxes.empty() || !(box.type == BoxType::Big && this->boxes.back().type == BoxType::SmallGroup);
 }
 
 Vector2 SimulationDock::getPosition() {
@@ -168,9 +179,9 @@ Vector2 SimulationDock::getPosition() {
 	int bottomRowY = renderHeight - GameLayout::STATUS_BAR_HEIGHT - dockTexture.height - DOCK_MARGIN;
 
 	switch (this->type) {
-	case FrameStewartSolver::DockType::Origin:
+	case UnloadSolver::DockType::Origin:
 		return { (float)DOCK_MARGIN, (float)bottomRowY };
-	case FrameStewartSolver::DockType::Destination:
+	case UnloadSolver::DockType::Destination:
 		return { (float)(renderWidth - dockTexture.width - DOCK_MARGIN), (float)bottomRowY };
 	default:
 		int count = this->simulation.auxiliarDocks;
@@ -192,10 +203,10 @@ void SimulationDock::draw() {
 	Font labelFont = this->simulation.getLabelFont();
 	const char* label;
 	switch (this->type) {
-	case FrameStewartSolver::DockType::Origin:
+	case UnloadSolver::DockType::Origin:
 		label = "Muelle origen";
 		break;
-	case FrameStewartSolver::DockType::Destination:
+	case UnloadSolver::DockType::Destination:
 		label = "Muelle destino";
 		break;
 	default:
@@ -208,10 +219,10 @@ void SimulationDock::draw() {
 
 SolutionMovement::SolutionMovement(
 	GameSimulation& simulation,
-	FrameStewartSolver::Movement movement
+	UnloadSolver::Movement movement
 ) :
-	simulation(simulation), boxIndex(movement.boxIndex),
-	sourceDock(lookupDockByBoxIndex(this->simulation, movement.boxIndex)),
+	simulation(simulation),
+	sourceDock(lookupDock(this->simulation, movement.source)),
 	destinationDock(lookupDock(this->simulation, movement.destination)),
 	progress(0.0f), completed(false) {
 }
@@ -229,10 +240,10 @@ void SolutionMovement::update(float dt) {
 }
 
 GameSimulation::GameSimulation() :
-	solver(), originDock(*this, FrameStewartSolver::DockType::Origin), destinationDock(*this, FrameStewartSolver::DockType::Destination),
+	solver(), originDock(*this, UnloadSolver::DockType::Origin), destinationDock(*this, UnloadSolver::DockType::Destination),
 	animationTime(0), truckAlpha(0), truckOffset(0), truckVisible(false), truckLeaving(false), truckLeaveTime(0),
 	draggedBox(nullptr), dragSource(nullptr), dragGrabOffset({ 0, 0 }),
-	boxes(0), auxiliarDocks(0), simulatedAtLeastOnce(false), playingBeginAnimation(false), playingSolution(false), solutionPlaybackSpeed(1.0f) {}
+	bigBoxes(0), smallGroups(0), auxiliarDocks(0), simulatedAtLeastOnce(false), playingBeginAnimation(false), playingSolution(false), solutionPlaybackSpeed(1.0f) {}
 
 bool GameSimulation::isDragging() {
 	return this->draggedBox != nullptr;
@@ -243,7 +254,11 @@ bool GameSimulation::isBeingDragged(SimulationBox& box) {
 }
 
 bool GameSimulation::areAllBoxesInDestination() {
-	return this->destinationDock.boxes.size() == this->boxes;
+	return this->destinationDock.boxes.size() == this->getTotalBoxes();
+}
+
+int GameSimulation::getTotalBoxes() {
+	return this->bigBoxes + this->smallGroups;
 }
 
 std::vector<SimulationDock*> GameSimulation::getDocks() {
@@ -288,25 +303,20 @@ Font GameSimulation::getLabelFont() {
 	return *this->labelFont;
 }
 
-float GameSimulation::getBoxInitialSize() {
-	switch (this->boxes) {
-	case 2:
-		return 60.0f;
-	case 3:
-		return 38.0f;
-	case 4:
-		return 22.0f;
-	default:
-		return 11.0f;
-	}
+// Escala las cajas para que la pila completa quepa sobre un muelle.
+float GameSimulation::getBoxScale() {
+	float stackHeight = this->bigBoxes * BIG_BOX_SIZE + this->smallGroups * SMALL_BOX_SIZE;
+	if (stackHeight <= MAX_STACK_HEIGHT) return 1.0f;
+	return MAX_STACK_HEIGHT / stackHeight;
 }
 
-void GameSimulation::begin(int boxes, int auxiliarDocks) {
+void GameSimulation::begin(int bigBoxes, int smallGroups, int auxiliarDocks) {
 	if (!this->simulatedAtLeastOnce) {
 		this->simulatedAtLeastOnce = true;
 	}
 
-	this->boxes = boxes;
+	this->bigBoxes = bigBoxes;
+	this->smallGroups = smallGroups;
 	this->auxiliarDocks = auxiliarDocks;
 
 	this->draggedBox = nullptr;
@@ -315,14 +325,18 @@ void GameSimulation::begin(int boxes, int auxiliarDocks) {
 	this->originDock.boxes.clear();
 	this->destinationDock.boxes.clear();
 
-	for (int i = boxes - 1; i >= 0; --i) {
-		this->originDock.boxes.emplace_back(*this, i);
+	this->originDock.boxes.reserve(this->getTotalBoxes());
+	for (int i = 0; i < bigBoxes; ++i) {
+		this->originDock.boxes.emplace_back(*this, BoxType::Big);
+	}
+	for (int i = 0; i < smallGroups; ++i) {
+		this->originDock.boxes.emplace_back(*this, BoxType::SmallGroup);
 	}
 
 	this->auxiliarDockList.clear();
 	this->auxiliarDockList.reserve(auxiliarDocks);
 	for (int i = 0; i < auxiliarDocks; ++i) {
-		this->auxiliarDockList.emplace_back(*this, FrameStewartSolver::DockType::Auxiliary, i);
+		this->auxiliarDockList.emplace_back(*this, UnloadSolver::DockType::Auxiliary, i);
 	}
 
 	this->playingBeginAnimation = true;
@@ -337,9 +351,9 @@ void GameSimulation::begin(int boxes, int auxiliarDocks) {
 	this->currentSolutionMovement.reset();
 }
 
-void GameSimulation::beginAndSolve(int boxes, int auxiliarDocks) {
-	this->begin(boxes, auxiliarDocks);
-	this->solution = this->solver.solve(boxes, auxiliarDocks + 2);
+void GameSimulation::beginAndSolve(int bigBoxes, int smallGroups, int auxiliarDocks) {
+	this->begin(bigBoxes, smallGroups, auxiliarDocks);
+	this->solution = this->solver.solve(bigBoxes, smallGroups, auxiliarDocks);
 	this->playingSolution = true;
 }
 
@@ -368,10 +382,11 @@ void GameSimulation::drawDrag() {
 		this->draggedBox->drawGhost(anchor.x, anchor.y, opacity);
 	}
 
-	float size = this->draggedBox->getSize();
+	float width = this->draggedBox->getWidth();
+	float height = this->draggedBox->getHeight();
 	float simulationBottom = (float)(GetRenderHeight() - GameLayout::STATUS_BAR_HEIGHT);
-	float centerX = std::clamp(mousePos.x - this->dragGrabOffset.x, size / 2.0f, GetRenderWidth() - size / 2.0f);
-	float bottom = std::clamp(mousePos.y - this->dragGrabOffset.y + size / 2.0f, GameLayout::SIMULATION_TOP + size, simulationBottom);
+	float centerX = std::clamp(mousePos.x - this->dragGrabOffset.x, width / 2.0f, GetRenderWidth() - width / 2.0f);
+	float bottom = std::clamp(mousePos.y - this->dragGrabOffset.y + height / 2.0f, GameLayout::SIMULATION_TOP + height, simulationBottom);
 	this->draggedBox->draw(centerX, bottom, false);
 }
 
@@ -492,7 +507,7 @@ void GameSimulation::consumeNextSolutionMovement() {
 		return;
 	}
 
-	FrameStewartSolver::Movement& rawMovement = this->solution.front();
+	UnloadSolver::Movement& rawMovement = this->solution.front();
 	this->currentSolutionMovement.emplace(*this, rawMovement);
 
 	this->solution.pop_front();
